@@ -44,6 +44,8 @@
 
 ;;; Code:
 
+(eval-when-compile (require 'cl))
+
 (defun cl-merge-struct (type s1 s2 &rest others)
   "Destructively updates fields in S1 with non-nil fields of S2.
 
