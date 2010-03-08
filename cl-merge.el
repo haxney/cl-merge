@@ -4,6 +4,7 @@
 
 ;; Author: Daniel Hackney
 ;; Keywords: internal lisp
+;; Version: 0.1
 
 ;; This file is free software; you can redistribute it and/or modify it under
 ;; the terms of the GNU General Public License as published by the Free Software
@@ -35,7 +36,7 @@
 ;;     (setq boy (make-person :age 17 :sex 'male))
 ;;         => [cl-struct-person nil 17 male]
 ;;
-;;     (cl-merge-struct dave boy)
+;;     (cl-merge-struct 'person dave boy)
 ;;         => [cl-struct-person "Dave" 17 male]
 ;;
 ;;     dave
@@ -50,23 +51,26 @@ TYPE is the name of the struct as given to `defstruct'. Both S1
 and S2 will be checked with the predicate for TYPE.
 
 If more than two structures are given, `cl-merge-struct'
-recursively calls itself."
-  (unless (and (typep type s1)
-               (typep type s2))
+recursively calls itself.
+
+Returns the modified value of S1."
+  (unless (and (typep s1 type)
+               (typep s2 type))
     (error "Expected arguments to be a CL struct of type `%s'" type))
   (when others
     (apply 'cl-merge-struct type s2 (car others) (cdr others)))
   (mapc '(lambda (slot)
            (let* ((slot-func (intern (concat
                                       (symbol-name type)
+                                      "-"
                                       (symbol-name slot))))
-                  (newval (funcall slot-func pkg2)))
+                  (newval (funcall slot-func s2)))
              (when newval
                ;; Needs to be `eval'ed because setf is a macro, so it would see
                ;; `slot-func' the symbol, not the value of it.
-               (eval `(setf (,slot-func pkg1) newval)))))
+               (eval `(setf (,slot-func s1) newval)))))
         (cdr (mapcar 'car (get type 'cl-struct-slots))))
-  pkg1)
+  s1)
 
 (provide 'cl-merge)
 
