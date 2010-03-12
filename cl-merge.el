@@ -61,18 +61,32 @@ Returns the modified value of S1."
     (error "Expected arguments to be a CL struct of type `%s'" type))
   (when others
     (apply 'cl-merge-struct type s2 (car others) (cdr others)))
-  (mapc '(lambda (slot)
+
+  (cl-merge-mapslots '(lambda (slot slot-func newval)
+                        (when newval
+                          ;; Needs to be `eval'ed because setf is a macro, so it would see
+                          ;; `slot-func' the symbol, not the value of it.
+                          (eval `(setf (,slot-func s1) newval))))
+                     type
+                     s2)
+  s1)
+
+(defun cl-merge-mapslots (func type obj)
+  "Apply FUNC to OBJ for each slot in TYPE.
+
+FUNC must be a function or lambda which accepts three arguments:
+
+ - The slot name as a symbol.
+ - The slot accessor function, as a symbol.
+ - The value of the slot for OBJ."
+  (mapcar '(lambda (slot)
            (let* ((slot-func (intern (concat
                                       (symbol-name type)
                                       "-"
                                       (symbol-name slot))))
-                  (newval (funcall slot-func s2)))
-             (when newval
-               ;; Needs to be `eval'ed because setf is a macro, so it would see
-               ;; `slot-func' the symbol, not the value of it.
-               (eval `(setf (,slot-func s1) newval)))))
-        (cdr (mapcar 'car (get type 'cl-struct-slots))))
-  s1)
+                  (val (funcall slot-func obj)))
+             (apply func (list slot slot-func val))))
+        (cdr (mapcar 'car (get type 'cl-struct-slots)))))
 
 (provide 'cl-merge)
 
