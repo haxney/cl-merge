@@ -88,6 +88,46 @@ FUNC must be a function or lambda which accepts three arguments:
              (apply func (list slot slot-func val))))
         (cdr (mapcar 'car (get type 'cl-struct-slots)))))
 
+(defun cl-merge-pp (struct type)
+  "Generates a pretty-printed representation of STRUCT.
+
+TYPE is the symbolic name of the type of STRUCT.
+
+It is printed as a plist, which is suitable for use with a
+structure constructor. For example, for the `person' structure
+defined as
+
+    (defstruct person name age sex)
+
+The following in invocation
+
+    (setq joe (make-person :name \"joe\"
+                           :age 23
+                           :sex 'male))
+
+    (cl-merge-pp joe 'person)
+
+Would produce:
+
+    \"(:name \\\"joe\\\"
+     :age 23
+     :sex male)
+    \""
+  (with-temp-buffer
+    (let ((standard-output (current-buffer)))
+      (princ "(")
+      (princ (mapconcat '(lambda (item)
+                           (concat (car item) " " (prin1-to-string (cadr item))))
+                        (delq nil (cl-merge-mapslots '(lambda (slot slot-func val)
+                                                        (when val
+                                                          (list (concat ":" (symbol-name slot))
+                                                                val)))
+                                                     type
+                                                     struct)) "\n"))
+      (princ ")\n"))
+    (indent-region (1+ (point-min)) (point-max) 1)
+    (buffer-string)))
+
 (provide 'cl-merge)
 
 ;;; cl-merge.el ends here
