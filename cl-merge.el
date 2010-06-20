@@ -125,7 +125,9 @@ Would produce:
                                                      type
                                                      struct)) "\n"))
       (princ ")\n"))
-    (indent-region (1+ (point-min)) (point-max) 1)
+    (emacs-lisp-mode)
+    (set (make-local-variable 'lisp-indent-offset) 1)
+    (indent-region (point-min) (point-max))
     (buffer-string)))
 
 (provide 'cl-merge)
